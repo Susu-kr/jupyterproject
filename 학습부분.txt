@@ -1,0 +1,158 @@
+def compute_acc(model, data_loader, device):
+    correct_pred, num_examples = 0, 0
+    #eval() : 모델을 평가모드로 전환
+    model.eval()
+    for i, (features, targets) in enumerate(data_loader):
+        #features : 데이터가 담겨있는 텐서
+        features = features.to(device)
+        #targets : 정답이 담겨있는 텐서 
+        targets = targets.to(device)
+        #probas : 모델이 예측한 각 클래스에 속할 확률을 담고 있음
+        logits, probas = model(features)
+        #predicted_labels : 모델이 예측한 정답
+        _, predicted_labels = torch.max(probas, 1)
+        num_examples += targets.size(0)
+        assert predicted_labels.size() == targets.size()
+        #맞은 경우를 세서 확률로 만들어 줌
+        correct_pred += (predicted_labels == targets).sum()
+    return correct_pred.float()/num_examples * 100
+    
+#time.time() 현재 시간을 기록함
+start_time = time.time()
+
+cost_list = []
+train_acc_list, valid_acc_list = [], []
+
+
+for epoch in range(NUM_EPOCHS):
+    #모델을 학습모드로 바꾼다.
+    model.train()
+    for batch_idx, (features, targets) in enumerate(train_loader):
+        
+        features = features.to(DEVICE)
+        targets = targets.to(DEVICE)
+            
+        #모델을 통해 예측을 수행하고
+        logits, probas = model(features)
+        #loss인 cross_entropy를 구한다.
+        cost = F.cross_entropy(logits, targets)
+        #backpropagation 전에는 optimizer의 남아있는 기울기를 제거
+        optimizer.zero_grad()
+        #backpropagation 수행
+        cost.backward()
+        
+        ### UPDATE MODEL PARAMETERS
+        optimizer.step()
+        
+        #################################################
+        ### CODE ONLY FOR LOGGING BEYOND THIS POINT
+        ################################################
+        cost_list.append(cost.item())
+        if not batch_idx % 150:
+            print (f'Epoch: {epoch+1:03d}/{NUM_EPOCHS:03d} | '
+                   f'Batch {batch_idx:03d}/{len(train_loader):03d} |' 
+                   f' Cost: {cost:.4f}')
+
+        
+    #모델을 평가모드로 바꾸기
+    model.eval()
+    with torch.set_grad_enabled(False): # save memory during inference
+        train_acc = compute_acc(model, train_loader, device=DEVICE)
+        valid_acc = compute_acc(model, valid_loader, device=DEVICE)
+        #validation 데이터셋에서 평가를 수행해본다.
+        print(f'Epoch: {epoch+1:03d}/{NUM_EPOCHS:03d}\n'
+              f'Train ACC: {train_acc:.2f} | Validation ACC: {valid_acc:.2f}')
+        
+        train_acc_list.append(train_acc)
+        valid_acc_list.append(valid_acc)
+    
+    elapsed = (time.time() - start_time)/60
+    print(f'Time elapsed: {elapsed:.2f} min')
+  
+elapsed = (time.time() - start_time)/60
+print(f'Total Training Time: {elapsed:.2f} min')
+
+[ Frame Entrypoint: controller default ]
+    For each frame:
+        Did the user click down on a controller's menu button?
+	If so:
+	    If the menu is not visible, open the menu
+	        (make it visible)
+	    Otherwise, close the menu
+--------------------------------------------------------------------------
+[ 프레임 진입 지점: 컨트롤러 기본값 ]
+    각 프레임마다:
+        사용자가 컨트롤러의 메뉴 버튼을 클릭했는가?
+            그렇다면 :
+                메뉴가 보이지 않으면 메뉴를 연다.
+	        (메뉴가 보이게 한다)
+	    그렇지 않으면 메뉴를 닫는다.
+
+[ Frame Entrypoint: controller menu behavior ]
+    For each frame:
+        Is there a control input scheme to monitor?(such as 'open menu')
+	If so, is there a mapped control in a state we should care about?
+	    If so, respond
+-----------------------------------------------------------------------------------
+[ 프레임 진입 지점: 컨트롤러 메뉴 동작 ]
+    각 프레임마다:
+        모니터링할 컨트롤 입력 체계가 있는가?(예를 들어 '메뉴 열기')
+	그렇다면 매핑된 컨트롤이 우리가 신경 써야 할 상태에 놓여 있는가?
+	    그렇다면 응답하라
+
+[ ControllerModule ] 	- 한 번만 작성
+[ ControlScheme ] 		- 애플리케이션당 한 번 작성
+[ ControllerMapping ] 	- 플랫폼 포트와 애플리케이션당 한 번 작성
+[ ControllerImplementation ] - 플랫폼 컨트롤러당 한 번 작성
+
+[ Frame Entrypoint: controller that can interact ]
+    For each frame:
+        If there is a nearest hovered object:
+	Is there a control input scheme to monitor? (such as 'interact')
+	    If so, is it in a state the object should respond to?
+	        If so, respond
+        Otherwise:
+	Is there a control input scheme to monitor? (such as 'open menu')
+	    If so, is it in a state we should care about?
+	        If so, respond
+------------------------------------------------------------------------------------
+[ 프레임 진입점: 상호작용할 수 있는 컨트롤러 ]
+    각 프레임마다:
+        가장 가까운 지점에 떠 있는 물체가 있는 경우:
+	모니터링할 컨트롤 입력 체계가 있는가?(예를 들어 '상호작용')
+	    그렇다면 물체가 응답해야 하는 상태인가?
+	        그렇다면 응답한다.
+        그렇지 않다면:
+	모니터링할 컨트롤 입력 체계가 있는가?(예를 들어 '메뉴 열기')
+	    그렇다면 물체는 우리가 신경 써야 할 상태에 놓여 있는가?
+	        그렇다면 응답한다.
+
+[ Frame Entrypoint: controller that can pick up an object ]
+    For each frame:
+        If there is a connected object:
+	Is there a control input scheme to monitor?(such as 'shoot' or 'drop')
+	    If so, is it in a state the object should respond to?
+	        If so, respond
+        Otherwise if there is a nearest hovered object:
+	Is there a control input scheme to monitor? (such as 'interact')
+	    If so, is it in a state the object should respond to?
+	        It so, respond
+        Otherwise:
+	Is there a control input scheme to monitor? (such as 'open menu')
+	    If so, is it in a state we should care about?
+	        If so, respond
+----------------------------------------------------------------------------------------
+[ 프레임 진입점: 물체를 집을 수 있는 컨트롤러 ]
+    각 프레임마다:
+        연결된 물체가 있는 경우:
+	모니터링할 컨트롤 입력 체계가 있는가?(예를 들어 '쏜다' 또는 '떨어뜨린다')
+	    그렇다면 물체가 응답해야 하는 상태인가?
+	        그렇다면 응답
+        그렇지 않고 가장 가까이 떠 있는 물체가 있는 경우:
+	모니터링할 컨트롤 입력 체계가 있는가?(예를 들어 '상호작용')
+	    그렇다면 물체가 응답해야 하는 상태인가?
+	        그렇다면 응답
+        그렇지 않으면:
+	모니터링할 컨트롤 입력 체계가 있는가?(예를 들어 '메뉴 열기')
+	    그렇다면 우리가 신경 써야 할 상태인가?
+	        그렇다면 응답
